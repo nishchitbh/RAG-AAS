@@ -1,0 +1,36 @@
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: mongodb
+    restart: unless-stopped
+    env_file:
+      - .env # load credentials from .env (MONGO_INITDB_ROOT_USERNAME, MONGO_INITDB_ROOT_PASSWORD)
+    environment:
+      # these are loaded from .env; remove if setting here directly
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    volumes:
+      - mongo_data:/data/db
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro # optional init scripts (create users, indexes)
+    ports:
+      - "27018:27017"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mongo",
+          "--username",
+          "$${MONGO_INITDB_ROOT_USERNAME}",
+          "--password",
+          "$${MONGO_INITDB_ROOT_PASSWORD}",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  mongo_data:
+    driver: local
